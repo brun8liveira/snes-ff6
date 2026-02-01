@@ -1,59 +1,114 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>SNES NFC</title>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+  <title>SNES - Jogo</title>
+
+  <style>
+    html, body {
+      margin: 0;
+      background: black;
+      height: 100%;
+      overflow: hidden;
+      touch-action: none; /* impede scroll/zoom por gesto */
+    }
+
+    #game {
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* Overlay de toque */
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.9);
+      color: white;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    #overlay span {
+      padding: 18px 28px;
+      background: #222;
+      border: 2px solid #fff;
+      border-radius: 10px;
+    }
+
+    #overlay:hover span {
+      background: #333;
+    }
+  </style>
 
   <script>
-    EJS_player = "#game";
-    EJS_core = "snes";                          // Super Nintendo
-    EJS_gameUrl = "roms/smw.smc";        // ajuste o nome da sua ROM
-    EJS_pathtodata = "https://cdn.emulatorjs.org/latest/data/";
-    EJS_startOnLoaded = true;
+    // Config EmulatorJS – SNES no SEU servidor
+    EJS_player        = "#game";
+    EJS_core          = "snes";           // Super Nintendo
+    EJS_gameUrl       = "roms/smw.smc";  // troque pelo nome da sua ROM, ex: "roms/dk.sfc"
+    EJS_pathtodata    = "data/";          // sua pasta data (a da imagem)
+    EJS_startOnLoaded = false;            // vamos iniciar manualmente no clique
     EJS_fullscreenOnLoaded = false;
   </script>
 
-  <script src="https://cdn.emulatorjs.org/latest/data/loader.js"></script>
-
-<style>
-html, body {
-  margin: 0;
-  background: black;
-  height: 100%;
-  overflow: hidden;
-}
-#game {
-  width: 100vw;
-  height: 100vh;
-}
-#overlay {
-  position: fixed;
-  inset: 0;
-  background: black;
-  color: white;
-  font-size: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-}
-</style>
+  <!-- Loader da sua pasta data local -->
+  <script src="data/loader.js"></script>
 </head>
-
 <body>
 
-<div id="overlay">▶ TOCAR PARA JOGAR</div>
-<div id="game"></div>
+  <!-- Único overlay de toque -->
+  <div id="overlay"><span>▶ TOCAR PARA JOGAR</span></div>
+  <div id="game"></div>
 
-<script>
-document.getElementById("overlay").addEventListener("click", () => {
-  // gesto do usuário (obrigatório no Android)
-  document.getElementById("overlay").remove();
+  <script>
+    const overlay = document.getElementById("overlay");
 
-  // fullscreen só após toque
-  document.documentElement.requestFullscreen?.();
-});
-</script>
+    overlay.addEventListener("click", async () => {
+      // 1. Fullscreen no mesmo gesto do usuário
+      const docEl = document.documentElement;
+      if (docEl.requestFullscreen) {
+        try {
+          await docEl.requestFullscreen();
+        } catch (e) {
+          console.log("Fullscreen falhou:", e);
+        }
+      }
+
+      // 2. Remove seu overlay
+      overlay.remove();
+
+      // 3. Se o EmulatorJS criou algum overlay interno, remove também
+      try {
+        const ejsOverlay = document.querySelector(
+          ".EJS_startOverlay, .ejs-start-overlay, .ejs_overlay"
+        );
+        if (ejsOverlay) ejsOverlay.remove();
+      } catch (e) {
+        console.log("Nenhum overlay interno para remover:", e);
+      }
+
+      // 4. Inicia o emulador manualmente
+      try {
+        if (window.EJS_start) {
+          window.EJS_start();
+        } else if (window.EJS_emulator && window.EJS_emulator.start) {
+          window.EJS_emulator.start();
+        }
+      } catch (e) {
+        console.log("Erro ao iniciar o emulador:", e);
+      }
+    });
+
+    // Fallback extra para impedir scroll ao arrastar
+    function blockScroll(e) { e.preventDefault(); }
+    window.addEventListener('touchmove', blockScroll, { passive: false });
+  </script>
 
 </body>
 </html>
